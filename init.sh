@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/sh
 ### BEGIN INIT INFO
 # Provides: robotd
 # Required-Start: 
@@ -9,8 +9,7 @@
 ### END INIT INFO
 
 start() {
-    PID=`pidof robotd`
-    if [ $? -eq 0 ]
+    if pidof robotd > /dev/null
     then
 	echo "robotd already started."
 	return
@@ -22,8 +21,7 @@ start() {
 }
 
 stop() {
-    PID=`pidof weblabsd`
-    if [ $? -eq 0 ]
+    if pidof robotd > /dev/null
     then
 	echo "Stopping robotd"
         kill -s INT `pidof robotd`
@@ -34,15 +32,14 @@ stop() {
 }
 
 case "$1" in
-    start)
+    start|restart|force-reload)
         start
         ;;
     stop)
         stop
         ;;
     status)
-	PID=`pidof robotd`
-	if [ $? -eq 0 ]
+	if pidof robotd > /dev/null
 	then
 	    echo "robotd is running."
 	else
@@ -54,8 +51,7 @@ case "$1" in
         start
         ;;
     *)
-        echo "Usage:  {start|stop|restart|status}"
+        echo "Usage:  {start|stop|restart|force-reload|status}"
         exit 1
         ;;
 esac
-exit $?
