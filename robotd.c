@@ -41,7 +41,6 @@
     exit(EXIT_FAILURE);						\
   }
 
-
 mraa_result_t     mr;
 mraa_gpio_context pin13, pin4;
 

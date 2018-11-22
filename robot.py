@@ -20,7 +20,7 @@ try:
         green.write(1)
 
 except KeyboardInterrupt as e:
-    syslog.syslog(syslog.LOG_ERR, str(e))
+    syslog.syslog(syslog.LOG_ERR, "Python code interrupted.")
 
 finally:
     syslog.syslog(syslog.LOG_NOTICE, "Shutting down LEDs.")
