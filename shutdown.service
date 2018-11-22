@@ -1,0 +1,12 @@
+#! /bin/sh
+[Unit]
+Description=Shutdown daemon
+[Service]
+Type=forking
+PIDFile=/var/run/shutdown.pid
+WorkingDirectory=/home/root/Robotd
+ExecStart=/etc/init.d/shtd start
+ExecReload=/etc/init.d/shtd restart
+ExecStop=/etc/init.d/shtd stop
+[Install]
+WantedBy=multi-user.target
