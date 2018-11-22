@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
@@ -50,6 +51,18 @@ int main(int argc, char ** argv) {
     return EXIT_FAILURE;
   }
 
+  // Create PID file
+  FILE * pid = fopen("/var/run/robot.pid", "w");
+
+  if (pid == NULL) {
+    perror("FILE * pid = fopen(\"/var/run/robot.pid\", \"w\")");
+    syslog(LOG_DAEMON | LOG_ERR, "Failed to create PID file.");
+    return EXIT_FAILURE;
+  }
+
+  fprintf(pid, "%d", getpid());
+  fclose(pid);
+  
   // Open a syslog connection
   openlog(argv[0], LOG_NDELAY | LOG_PID, LOG_DAEMON);
   syslog(LOG_DAEMON | LOG_NOTICE, "Started robot daemon.");

@@ -1,0 +1,12 @@
+#! /bin/sh
+[Unit]
+Description=Robot daemon
+[Service]
+Type=forking
+PIDFile=/var/run/robot.pid
+WorkingDirectory=/home/root/Robotd
+ExecStart=/etc/init.d/robot start
+ExecReload=/etc/init.d/robot restart
+ExecStop=/etc/init.d/robot stop
+[Install]
+WantedBy=multi-user.target
