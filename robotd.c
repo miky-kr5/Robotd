@@ -13,18 +13,46 @@
 #define GPIO_PIN_4 4
 #define GPIO_PIN_13 13
 
+#define MRAA_CHECK_RESULT(X, Y, Z, Q)		\
+  if (X == MRAA_SUCCESS) {			\
+    syslog(LOG_DAEMON | LOG_NOTICE, Y);		\
+  } else {					\
+    syslog(LOG_DAEMON | LOG_ERR, Z);		\
+    if (Q) {					\
+      clean_up();				\
+      exit(EXIT_FAILURE);			\
+    }						\
+  }
+
+#define PYTHON_CHECK_RESULT(X, Y, Z, W)				\
+  if (X == 0) {							\
+    syslog(LOG_DAEMON | LOG_NOTICE, Y);				\
+  } else if (X == 1) {						\
+    syslog(LOG_DAEMON | LOG_ERR, Z);				\
+    clean_up();							\
+    exit(EXIT_FAILURE);						\
+  } else if (X == 2) {						\
+    syslog(LOG_DAEMON | LOG_ERR, W);				\
+    clean_up();							\
+    exit(EXIT_FAILURE);						\
+  } else {							\
+    syslog(LOG_DAEMON | LOG_ERR, "Python returned %d", X);	\
+    clean_up();							\
+    exit(EXIT_FAILURE);						\
+  }
+
+
 mraa_result_t     mr;
 mraa_gpio_context pin13, pin4;
 
 void clean_up() {
   syslog(LOG_DAEMON | LOG_WARNING, "Cleaning up.");
   mr = mraa_gpio_write(pin4, 0);
-  // TODO: MRAA error handling
+  MRAA_CHECK_RESULT(mr, "Red LED turned off.", "Failed to turn off the red LED.", false)
   closelog();
 }
 
 void sig_handler(int signal) {
-  // Turn off the red LED
   syslog(LOG_DAEMON | LOG_WARNING, "Robot daemon interrupted.");
   clean_up();
   exit(EXIT_FAILURE);
@@ -70,25 +98,25 @@ int main(int argc, char ** argv) {
   // Open PIN 13 as a PULLUP input pin for the push button
   pin13 = mraa_gpio_init(GPIO_PIN_13);
   mr = mraa_gpio_dir(pin13, MRAA_GPIO_IN);
+  MRAA_CHECK_RESULT(mr, "Opened push button pin.", "Failed to open push button pin.", true);
   mr = mraa_gpio_mode(pin13, MRAA_GPIO_PULLUP);
-  syslog(LOG_DAEMON | LOG_NOTICE, "Push button ready.");
-
-  // TODO: MRAA error handling
+  MRAA_CHECK_RESULT(mr, "Push button ready.", "Failed to set push button mode.", true);
 
   // Open PIN 4 as an output pin for the red indicator LED
   pin4 = mraa_gpio_init(GPIO_PIN_4);
   mr = mraa_gpio_dir(pin4, MRAA_GPIO_OUT);
-  syslog(LOG_DAEMON | LOG_NOTICE, "Red LED ready.");
-
-  // TODO: MRAA error handling
+  MRAA_CHECK_RESULT(mr, "Red LED ready.", "Failed to open red LED pin.", true);
 
   // Start pin processing loop
   while (!done) {
     // Keep the red LED on and read from the push button pin
     mr = mraa_gpio_write(pin4, 1);
-    rv = mraa_gpio_read(pin13);
 
-    // TODO: MRAA error handling
+    if (mr != MRAA_SUCCESS) {
+      syslog(LOG_DAEMON | LOG_ERR, "Failed to write to the red LED.");
+    }
+    
+    rv = mraa_gpio_read(pin13);
 
     if (rv == 0) {
       // If the button is pressed then stop reading and go on with the program
@@ -96,11 +124,6 @@ int main(int argc, char ** argv) {
       done = true;
     }
   }
-
-  // Turn off the red LED
-  mr = mraa_gpio_write(pin4, 0);
-
-  // TODO: MRAA error handling
 
   // Open the source code file for the Python script
   syslog(LOG_DAEMON | LOG_NOTICE, "Opening Python source code.");
@@ -127,10 +150,9 @@ int main(int argc, char ** argv) {
   syslog(LOG_DAEMON | LOG_NOTICE, "Performing Python call.");  
   Py_SetProgramName(argv[0]);
   Py_Initialize();
-  PyRun_SimpleFile(code, "/home/root/Robotd/robot.py");
+  rv = PyRun_SimpleFile(code, "/home/root/Robotd/robot.py");
+  PYTHON_CHECK_RESULT(rv, "robot.py success", "robot.py exception", "robot.py failure")
   Py_Finalize();
-
-  // TODO: Python error handling
 
   // Close the source code file
   fclose(code);
